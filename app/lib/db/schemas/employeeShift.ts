@@ -1,4 +1,4 @@
-import { Schema, model, Document } from "mongoose";
+import mongoose, { Connection, Document, Model, Schema, model } from "mongoose";
 
 export interface IEmployeeShift extends Document {
   employeeId: string;
@@ -47,4 +47,8 @@ const EmployeeShiftSchema = new Schema<IEmployeeShift>(
 
 EmployeeShiftSchema.index({ employeeId: 1, status: 1 });
 
-export const EmployeeShiftModel = model<IEmployeeShift>("EmployeeShift", EmployeeShiftSchema);
+export function getEmployeeShiftModel(connection: Connection = mongoose.connection): Model<IEmployeeShift> {
+  return connection.models.EmployeeShift || connection.model<IEmployeeShift>("EmployeeShift", EmployeeShiftSchema);
+}
+
+export const EmployeeShiftModel = getEmployeeShiftModel(mongoose.connection);

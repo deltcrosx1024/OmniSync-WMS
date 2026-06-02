@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { connectToMongo } from "../../lib/db/connection";
-import { UserModel } from "../../lib/db/schemas/user";
+import { connectToMongo, getMongoDb, MONGODB_CREDENTIALS_DB } from "../../lib/db/connection";
+import { getUserModel } from "../../lib/db/schemas/user";
 import { getBearerToken, verifyJwt, hashPassword } from "../../lib/auth";
 
 async function authenticate(request: Request) {
@@ -15,7 +15,7 @@ async function authenticate(request: Request) {
   return payload as Record<string, any>;
 }
 
-async function ensureDefaultSuperAdmin() {
+async function ensureDefaultSuperAdmin(UserModel: ReturnType<typeof getUserModel>) {
   const count = await UserModel.countDocuments();
   if (count === 0) {
     await UserModel.create({
@@ -32,7 +32,10 @@ async function ensureDefaultSuperAdmin() {
 
 export async function GET(request: Request) {
   await connectToMongo();
-  await ensureDefaultSuperAdmin();
+  const credentialsDb = getMongoDb(MONGODB_CREDENTIALS_DB);
+  const UserModel = getUserModel(credentialsDb);
+  await UserModel.createCollection().catch(() => {});
+  await ensureDefaultSuperAdmin(UserModel);
 
   const payload = await authenticate(request);
   if (!payload || !payload.isSuperAdmin) {
@@ -45,7 +48,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   await connectToMongo();
-  await ensureDefaultSuperAdmin();
+  const credentialsDb = getMongoDb(MONGODB_CREDENTIALS_DB);
+  const UserModel = getUserModel(credentialsDb);
+  await UserModel.createCollection().catch(() => {});
+  await ensureDefaultSuperAdmin(UserModel);
 
   const payload = await authenticate(request);
   if (!payload || !payload.isSuperAdmin) {

@@ -1,4 +1,4 @@
-import { Schema, model, models, Document } from "mongoose";
+import mongoose, { Connection, Document, Model, Schema, model, models } from "mongoose";
 
 export interface IInventoryTransaction extends Document {
   productId: Schema.Types.ObjectId;
@@ -39,4 +39,8 @@ const InventoryTransactionSchema = new Schema<IInventoryTransaction>(
 
 InventoryTransactionSchema.index({ createdAt: -1 });
 
-export const TransactionModel = models.Transaction || model<IInventoryTransaction>("Transaction", InventoryTransactionSchema);
+export function getTransactionModel(connection: Connection = mongoose.connection): Model<IInventoryTransaction> {
+  return connection.models.Transaction || connection.model<IInventoryTransaction>("Transaction", InventoryTransactionSchema);
+}
+
+export const TransactionModel = getTransactionModel(mongoose.connection);

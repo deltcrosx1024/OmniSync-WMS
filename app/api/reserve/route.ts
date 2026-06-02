@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
-import { connectToMongo } from "../../lib/db/connection";
-import { ProductModel } from "../../lib/db/schemas/product";
-import { InventoryModel } from "../../lib/db/schemas/inventory";
+import { connectToMongo, getMongoDb, MONGODB_INVENTORY_DB } from "../../lib/db/connection";
+import { getProductModel } from "../../lib/db/schemas/product";
+import { getInventoryModel } from "../../lib/db/schemas/inventory";
 
 export async function POST(request: Request) {
   await connectToMongo();
+  const inventoryDb = getMongoDb(MONGODB_INVENTORY_DB);
+  const ProductModel = getProductModel(inventoryDb);
+  const InventoryModel = getInventoryModel(inventoryDb);
+  await ProductModel.createCollection().catch(() => {});
+  await InventoryModel.createCollection().catch(() => {});
+
   const body = await request.json();
   const barcode = typeof body.barcode === "string" ? body.barcode.trim() : undefined;
   const sku = typeof body.sku === "string" ? body.sku.trim() : undefined;

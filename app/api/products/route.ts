@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
-import { connectToMongo } from "../../lib/db/connection";
-import { ProductModel } from "../../lib/db/schemas/product";
-import { InventoryModel } from "../../lib/db/schemas/inventory";
+import { connectToMongo, getMongoDb, MONGODB_INVENTORY_DB } from "../../lib/db/connection";
+import { getProductModel } from "../../lib/db/schemas/product";
+import { getInventoryModel } from "../../lib/db/schemas/inventory";
 import { generateBarcodeForSKU } from "../../lib/barcode";
 
 export async function GET() {
   await connectToMongo();
+  const inventoryDb = getMongoDb(MONGODB_INVENTORY_DB);
+  const ProductModel = getProductModel(inventoryDb);
+  const InventoryModel = getInventoryModel(inventoryDb);
 
   const products = await ProductModel.aggregate([
     {
       $lookup: {
-        from: "inventories",
+        from: InventoryModel.collection.name,
         localField: "_id",
         foreignField: "productId",
         as: "inventory",
@@ -53,6 +56,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   await connectToMongo();
+  const inventoryDb = getMongoDb(MONGODB_INVENTORY_DB);
+  const ProductModel = getProductModel(inventoryDb);
+  const InventoryModel = getInventoryModel(inventoryDb);
+  await ProductModel.createCollection().catch(() => {});
+  await InventoryModel.createCollection().catch(() => {});
+
   const body = await request.json().catch(() => ({}));
 
   const sku = typeof body.sku === "string" ? body.sku.trim() : "";
@@ -101,13 +110,17 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   await connectToMongo();
+  const inventoryDb = getMongoDb(MONGODB_INVENTORY_DB);
+  const ProductModel = getProductModel(inventoryDb);
+  const InventoryModel = getInventoryModel(inventoryDb);
+
   const body = await request.json();
 
   if (!Array.isArray(body.updates)) {
     return NextResponse.json({ error: "Missing updates array" }, { status: 400 });
   }
 
-  const results = [];
+  const results: Array<{ id: string; sku: string }> = [];
 
   for (const update of body.updates) {
     if (!update.id) {
@@ -167,7 +180,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    results.push({ id: product._id, sku: product.sku });
+    results.push({ id: String(product._id), sku: product.sku });
   }
 
   return NextResponse.json({ updated: results.length, rows: results });

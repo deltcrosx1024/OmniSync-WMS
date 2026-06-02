@@ -1,11 +1,22 @@
 // app/api/checkout/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { ProductModel } from "../../lib/db/schemas/product";
-import { InventoryModel } from "../../lib/db/schemas/inventory";
-import mongoose from "mongoose";
+import { connectToMongo, getMongoDb, MONGODB_INVENTORY_DB, MONGODB_POS_DB } from "../../lib/db/connection";
+import { getProductModel } from "../../lib/db/schemas/product";
+import { getInventoryModel } from "../../lib/db/schemas/inventory";
+import { getTransactionModel } from "../../lib/db/schemas/transaction";
 
 export async function POST(request: NextRequest) {
-  const session = await mongoose.startSession();
+  await connectToMongo();
+  const inventoryDb = getMongoDb(MONGODB_INVENTORY_DB);
+  const posDb = getMongoDb(MONGODB_POS_DB);
+
+  const ProductModel = getProductModel(inventoryDb);
+  const InventoryModel = getInventoryModel(inventoryDb);
+  const TransactionModel = getTransactionModel(posDb);
+  await ProductModel.createCollection().catch(() => {});
+  await InventoryModel.createCollection().catch(() => {});
+  await TransactionModel.createCollection().catch(() => {});
+  const session = await inventoryDb.startSession();
   session.startTransaction();
 
   try {
@@ -16,7 +27,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid items list" }, { status: 400 });
     }
 
-    // We'll process each item
+    const transactionEntries: any[] = [];
+
     for (const item of items) {
       const { sku, quantity } = item;
 
@@ -25,35 +37,30 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `Invalid item: ${JSON.stringify(item)}` }, { status: 400 });
       }
 
-      // Find the product by SKU
       const product = await ProductModel.findOne({ sku }).session(session);
       if (!product) {
         await session.abortTransaction();
         return NextResponse.json({ error: `Product not found for SKU: ${sku}` }, { status: 404 });
       }
 
-      // Find the inventory for this product
       const inventory = await InventoryModel.findOne({ productId: product._id }).session(session);
       if (!inventory) {
         await session.abortTransaction();
         return NextResponse.json({ error: `Inventory not found for product: ${product.name}` }, { status: 404 });
       }
 
-      // Check if we have enough available quantity
       if (inventory.available_quantity < quantity) {
         await session.abortTransaction();
         return NextResponse.json({ error: `Insufficient stock for SKU: ${sku}. Available: ${inventory.available_quantity}, requested: ${quantity}` }, { status: 400 });
       }
 
-      // Update inventory with optimistic locking
-      // We use the current version in the update condition
       const result = await InventoryModel.updateOne(
-        { _id: inventory._id, version: inventory.version }, // Condition: match the current version
+        { _id: inventory._id, version: inventory.version },
         {
           $inc: {
             available_quantity: -quantity,
             reserved_quantity: quantity,
-            version: 1, // Increment version
+            version: 1,
           },
           $set: {
             lastUpdated: new Date(),
@@ -61,19 +68,32 @@ export async function POST(request: NextRequest) {
         }
       ).session(session);
 
-      // If the update affected 0 documents, it means the version changed (someone else updated it)
       if (result.modifiedCount === 0) {
         await session.abortTransaction();
         return NextResponse.json({ error: `Stock for SKU: ${sku} has been modified by another operation. Please retry.` }, { status: 409 });
       }
+
+      transactionEntries.push({
+        productId: product._id,
+        sku: product.sku,
+        barcode: product.barcode,
+        employeeId: shiftId ? String(shiftId) : "unknown",
+        employeeName: shiftId ? `Shift ${shiftId}` : "checkout",
+        deviceId: "checkout",
+        action: "checkout",
+        quantity,
+        notes: `Checkout processed${shiftId ? ` for shift ${shiftId}` : ""}`,
+        metadata: { shiftId: shiftId || null },
+      });
     }
 
-    // If we get here, all updates succeeded
+    if (transactionEntries.length) {
+      await TransactionModel.create(transactionEntries, { session });
+    }
+
     await session.commitTransaction();
     session.endSession();
 
-    // Optionally, you can create a sales order or update the shift here
-    // For now, we just return success
     return NextResponse.json({ success: true, message: "Checkout successful" }, { status: 200 });
   } catch (error) {
     await session.abortTransaction();

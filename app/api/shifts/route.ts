@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { connectToMongo } from "../../lib/db/connection";
-import { EmployeeShiftModel } from "../../lib/db/schemas/employeeShift";
+import { connectToMongo, getMongoDb, MONGODB_POS_DB } from "../../lib/db/connection";
+import { getEmployeeShiftModel } from "../../lib/db/schemas/employeeShift";
 import { getBearerToken, verifyJwt } from "../../lib/auth";
 
 function authenticate(request: Request) {
@@ -17,6 +17,10 @@ function authenticate(request: Request) {
 
 export async function GET(request: Request) {
   await connectToMongo();
+  const posDb = getMongoDb(MONGODB_POS_DB);
+  const EmployeeShiftModel = getEmployeeShiftModel(posDb);
+  await EmployeeShiftModel.createCollection().catch(() => {});
+
   let activeOnly = false;
   const url = new URL(request.url);
   if (url.searchParams.get("active") === "true") {
@@ -41,6 +45,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   await connectToMongo();
+  const posDb = getMongoDb(MONGODB_POS_DB);
+  const EmployeeShiftModel = getEmployeeShiftModel(posDb);
+  await EmployeeShiftModel.createCollection().catch(() => {});
+
   const payload = authenticate(request);
   const employeeId = payload.sub as string;
   const employeeName = payload.name as string;
@@ -66,6 +74,10 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   await connectToMongo();
+  const posDb = getMongoDb(MONGODB_POS_DB);
+  const EmployeeShiftModel = getEmployeeShiftModel(posDb);
+  await EmployeeShiftModel.createCollection().catch(() => {});
+
   const payload = authenticate(request);
   const employeeId = payload.sub as string;
   const body = await request.json();

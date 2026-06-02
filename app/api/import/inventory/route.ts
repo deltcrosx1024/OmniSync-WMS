@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { connectToMongo } from "../../../lib/db/connection";
-import { ProductModel } from "../../../lib/db/schemas/product";
-import { InventoryModel } from "../../../lib/db/schemas/inventory";
+import { connectToMongo, getMongoDb, MONGODB_INVENTORY_DB } from "../../../lib/db/connection";
+import { getProductModel } from "../../../lib/db/schemas/product";
+import { getInventoryModel } from "../../../lib/db/schemas/inventory";
 import { generateBarcodeForSKU } from "../../../lib/barcode";
 import { InventoryImportRow, normalizeImportRows, parseInventoryFile } from "../../../lib/importHelpers";
 
-async function upsertInventoryRow(row: InventoryImportRow) {
+async function upsertInventoryRow(row: InventoryImportRow, ProductModel: ReturnType<typeof getProductModel>, InventoryModel: ReturnType<typeof getInventoryModel>) {
   const normalizedSku = row.sku.trim();
   const product = await ProductModel.findOneAndUpdate(
     { sku: normalizedSku },
@@ -53,6 +53,11 @@ async function upsertInventoryRow(row: InventoryImportRow) {
 
 export async function POST(request: Request) {
   await connectToMongo();
+  const inventoryDb = getMongoDb(MONGODB_INVENTORY_DB);
+  const ProductModel = getProductModel(inventoryDb);
+  const InventoryModel = getInventoryModel(inventoryDb);
+  await ProductModel.createCollection().catch(() => {});
+  await InventoryModel.createCollection().catch(() => {});
 
   const contentType = request.headers.get("content-type") || "";
   let rows: InventoryImportRow[] = [];
@@ -79,7 +84,7 @@ export async function POST(request: Request) {
     if (!row.sku || !row.name) {
       continue;
     }
-    await upsertInventoryRow(row);
+    await upsertInventoryRow(row, ProductModel, InventoryModel);
   }
 
   return NextResponse.json({ success: true, imported: normalizedRows.length });

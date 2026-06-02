@@ -1,4 +1,4 @@
-import { Schema, model, Document } from "mongoose";
+import mongoose, { Connection, Document, Schema, Model, model } from "mongoose";
 
 // Product Schema (referenced by Inventory)
 export interface IProduct extends Document {
@@ -35,4 +35,8 @@ const ProductSchema = new Schema<IProduct>(
   { timestamps: true }
 );
 
-export const ProductModel = model<IProduct>("Product", ProductSchema);
+export function getProductModel(connection: Connection = mongoose.connection): Model<IProduct> {
+  return connection.models.Product || connection.model<IProduct>("Product", ProductSchema);
+}
+
+export const ProductModel = getProductModel(mongoose.connection);

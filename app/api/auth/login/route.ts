@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { connectToMongo } from "../../../lib/db/connection";
-import { UserModel } from "../../../lib/db/schemas/user";
+import { connectToMongo, getMongoDb, MONGODB_CREDENTIALS_DB } from "../../../lib/db/connection";
+import { getUserModel } from "../../../lib/db/schemas/user";
 import { signJwt, hashPassword, verifyPassword } from "../../../lib/auth";
 
 const envSuperAdmin = {
@@ -10,7 +10,7 @@ const envSuperAdmin = {
   name: process.env.SUPERADMIN_NAME || "Super Administrator",
 };
 
-async function ensureDefaultSuperAdmin() {
+async function ensureDefaultSuperAdmin(UserModel: ReturnType<typeof getUserModel>) {
   const count = await UserModel.countDocuments();
   if (count === 0) {
     await UserModel.create({
@@ -43,7 +43,10 @@ function matchEnvSuperAdmin({ email, password, pin }: { email?: string; password
 
 export async function POST(request: Request) {
   await connectToMongo();
-  await ensureDefaultSuperAdmin();
+  const credentialsDb = getMongoDb(MONGODB_CREDENTIALS_DB);
+  const UserModel = getUserModel(credentialsDb);
+  await UserModel.createCollection().catch(() => {});
+  await ensureDefaultSuperAdmin(UserModel);
 
   const body = await request.json();
   const pin = typeof body.pin === "string" ? body.pin.trim() : "";

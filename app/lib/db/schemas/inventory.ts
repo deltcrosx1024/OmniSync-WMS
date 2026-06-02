@@ -1,4 +1,4 @@
-import { Schema, model, Document } from "mongoose";
+import mongoose, { Connection, Document, Schema, Model, model } from "mongoose";
 
 // Inventory Schema
 export interface IInventory extends Document {
@@ -24,4 +24,8 @@ const InventorySchema = new Schema<IInventory>(
 // Index for quick lookups by productId
 InventorySchema.index({ productId: 1 });
 
-export const InventoryModel = model<IInventory>("Inventory", InventorySchema);
+export function getInventoryModel(connection: Connection = mongoose.connection): Model<IInventory> {
+  return connection.models.Inventory || connection.model<IInventory>("Inventory", InventorySchema);
+}
+
+export const InventoryModel = getInventoryModel(mongoose.connection);

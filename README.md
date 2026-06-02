@@ -57,6 +57,10 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 Copy `.env.example` to `.env` and set:
 
 - `MONGODB_URI` - MongoDB connection string
+- `MONGODB_HOST` - MongoDB cluster host for public/private key auth (e.g. `cluster.example.mongodb.net`)
+- `MONGODB_API_PUB_KEY` - MongoDB API public key
+- `MONGODB_API_PRIV_KEY` - MongoDB API private key
+- `MONGODB_APP_NAME` - optional MongoDB client app name
 - `JWT_SECRET` - JWT signing secret
 - `SUPERADMIN_EMAIL` - optional superadmin fallback email
 - `SUPERADMIN_PASSWORD` - optional superadmin fallback password
