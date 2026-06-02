@@ -7,6 +7,7 @@ export interface IUser extends Document {
   pin: string;
   passwordHash?: string;
   isSuperAdmin: boolean;
+  organizationPin: string;
   status: "active" | "disabled";
   createdAt: Date;
   updatedAt: Date;
@@ -36,6 +37,12 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: true,
       trim: true,
+    },
+    organizationPin: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
     },
     passwordHash: {
       type: String,

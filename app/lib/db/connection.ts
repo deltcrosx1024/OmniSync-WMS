@@ -49,6 +49,7 @@ export const MONGODB_CREDENTIALS_DB = process.env.MONGODB_CREDENTIALS_DB || "Omn
 export const MONGODB_INVENTORY_DB = process.env.MONGODB_INVENTORY_DB || "OmniSyncInventory";
 export const MONGODB_POS_DB = process.env.MONGODB_POS_DB || "OmniSyncPOS";
 export const MONGODB_SETTINGS_DB = process.env.MONGODB_SETTINGS_DB || "OmniSyncSettings";
+export const MONGODB_ORGANIZATIONS_DB = process.env.MONGODB_ORGANIZATIONS_DB || "OmniSyncOrganizations";
 
 export async function connectToMongo() {
   const mongoUri =
