@@ -7,6 +7,7 @@ export interface IOrganization extends Document {
   email?: string;
   phone?: string;
   address?: string;
+  password?: string; // Optional password for organization-level access
   status: "active" | "inactive";
   createdBy: string; // User ID of superadmin who created this
   organizationGroupPin?: string; // Optional: PIN of organization group this belongs to
@@ -45,6 +46,10 @@ const OrganizationSchema = new Schema<IOrganization>(
     address: {
       type: String,
       trim: true,
+    },
+    password: {
+      type: String,
+      required: false,
     },
     status: {
       type: String,

@@ -8,6 +8,7 @@ const envSuperAdmin = {
   password: process.env.SUPERADMIN_PASSWORD || "Admin@123",
   pin: process.env.SUPERADMIN_PIN || "0000",
   name: process.env.SUPERADMIN_NAME || "Super Administrator",
+  organizationPin: process.env.SUPERADMIN_ORG_PIN || "0000",
 };
 
 async function ensureDefaultSuperAdmin(UserModel: ReturnType<typeof getUserModel>) {
@@ -18,6 +19,7 @@ async function ensureDefaultSuperAdmin(UserModel: ReturnType<typeof getUserModel
       name: envSuperAdmin.name,
       role: "superadmin",
       pin: envSuperAdmin.pin,
+      organizationPin: envSuperAdmin.organizationPin,
       passwordHash: hashPassword(envSuperAdmin.password),
       isSuperAdmin: true,
       status: "active",
@@ -75,6 +77,7 @@ export async function POST(request: Request) {
         name: fallback.name,
         role: "superadmin",
         email: fallback.email,
+        organizationPin: fallback.organizationPin,
         isSuperAdmin: true,
       } as any;
     }
