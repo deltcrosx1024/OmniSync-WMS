@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+﻿# OmniSync WMS
+
+OmniSync WMS is a warehouse management portal designed for motorcycle repair and parts inventory operations.
+
+## Project Summary
+
+- Role-based user authentication with MongoDB-backed staff accounts and `.env` superadmin fallback.
+- Central portal UI that hides all navigation until login is complete.
+- Inventory, cashier, employee shift, and admin management modules.
+- Offline transaction storage sync and Loyverse inventory integration.
+
+## Key Features
+
+- Login portal with MongoDB-backed users and `.env` superadmin fallback
+- Role-aware dashboard and admin controls for superadmins only
+- Inventory, cashier, and employee shift management
+- Upload/import inventory via CSV or XLSX
+- Loyverse API sync and mobile transaction sync endpoints
+- JWT-based authentication with secure password hashing
 
 ## Getting Started
 
-First, run the development server:
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Create a local environment file
+
+```bash
+cp .env.example .env
+```
+
+Update `.env` with your MongoDB connection string and optional superadmin credentials.
+
+### Loyverse OAuth callback
+
+When registering your Loyverse app, use your deployment callback URL:
+
+```text
+https://omnisync.vercel.app/api/callback
+```
+
+### Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Open the app
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Variables
 
-## Learn More
+Copy `.env.example` to `.env` and set:
 
-To learn more about Next.js, take a look at the following resources:
+- `MONGODB_URI` - MongoDB connection string
+- `JWT_SECRET` - JWT signing secret
+- `SUPERADMIN_EMAIL` - optional superadmin fallback email
+- `SUPERADMIN_PASSWORD` - optional superadmin fallback password
+- `SUPERADMIN_NAME` - optional superadmin display name
+- `LOYVERSE_CLIENT_ID` - Loyverse OAuth client ID
+- `LOYVERSE_CLIENT_SECRET` - Loyverse OAuth client secret
+- `LOYVERSE_TOKEN_URL` - Loyverse OAuth token endpoint
+- `LOYVERSE_API_BASE_URL` - Loyverse API base URL
+- `LOYVERSE_REDIRECT_URI` - Loyverse OAuth redirect URI, such as `https://omnisync.vercel.app/api/callback`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Unauthenticated users see only a centered login card.
+- The app validates database users first and falls back to `.env` superadmin credentials only if no database user exists.
+- New superadmin employee accounts are always stored in MongoDB.
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is licensed under the Creative Commons Attribution 3.0 License. See LICENSE for details.
