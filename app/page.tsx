@@ -98,7 +98,12 @@ export default function Dashboard() {
     }
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // ignore
+    }
     setToken("");
     setProfile(null);
 

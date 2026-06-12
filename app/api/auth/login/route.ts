@@ -107,7 +107,7 @@ export async function POST(request: Request) {
     isSuperAdmin: Boolean(user.isSuperAdmin),
   });
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     token,
     employee: {
       id: String(user._id),
@@ -117,4 +117,14 @@ export async function POST(request: Request) {
       isSuperAdmin: Boolean(user.isSuperAdmin),
     },
   });
+
+  response.cookies.set("gridflow-token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60,
+    path: "/",
+  });
+
+  return response;
 }

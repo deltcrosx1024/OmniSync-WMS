@@ -190,7 +190,12 @@ export default function EmployeePage() {
     return `Expected cash: $${activeShift.expectedCash.toFixed(2)}`;
   }, [activeShift]);
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // ignore
+    }
     localStorage.removeItem("gridflow-token");
     localStorage.removeItem("gridflow-user");
     setToken("");

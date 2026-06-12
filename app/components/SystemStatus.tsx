@@ -6,8 +6,8 @@ type ConnectionStatus = "connected" | "disconnected" | "unknown";
 
 export default function SystemStatus({ className }: Readonly<{ className?: string }>) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [mongodbStatus] = useState<ConnectionStatus>("connected");
-  const [loyverseStatus] = useState<ConnectionStatus>("connected");
+  const [mongodbStatus, setMongodbStatus] = useState<ConnectionStatus>("unknown");
+  const [loyverseStatus, setLoyverseStatus] = useState<ConnectionStatus>("unknown");
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -16,7 +16,37 @@ export default function SystemStatus({ className }: Readonly<{ className?: strin
 
     const token = window.localStorage.getItem("gridflow-token");
     const rawUser = window.localStorage.getItem("gridflow-user");
-    setIsLoggedIn(Boolean(token && rawUser));
+    const loggedIn = Boolean(token && rawUser);
+    setIsLoggedIn(loggedIn);
+
+    if (!loggedIn) return;
+
+    let mounted = true;
+    async function checkHealth() {
+      try {
+        const response = await fetch("/api/health");
+        if (response.ok) {
+          const data = await response.json();
+          if (mounted) {
+            setMongodbStatus(data.mongodb || "unknown");
+            setLoyverseStatus(data.loyverse || "unknown");
+          }
+        }
+      } catch {
+        if (mounted) {
+          setMongodbStatus("disconnected");
+          setLoyverseStatus("disconnected");
+        }
+      }
+    }
+
+    checkHealth();
+    const interval = setInterval(checkHealth, 30000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   if (!isLoggedIn) {

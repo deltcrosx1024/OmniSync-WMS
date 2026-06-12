@@ -102,21 +102,25 @@ export function useOfflineSync() {
         return;
       }
 
-      // In a real app, you would send these transactions to your API endpoint
-      // For example, we might have a batch checkout endpoint: /api/batch-checkout
-      // We'll simulate by logging and then clearing the store.
-      // Replace this with an actual fetch to your API.
-      console.log(`Syncing ${transactions.length} transactions to the cloud...`);
-      // await fetch('/api/batch-checkout', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ transactions }),
-      // });
+      const token = typeof window !== "undefined" ? window.localStorage.getItem("gridflow-token") : null;
+      if (!token) {
+        throw new Error("No auth token available for sync");
+      }
 
-      // For now, we'll just clear the store after a simulated delay
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network delay
+      const response = await fetch("/api/mobile/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ transactions, deviceId: "web-cashier" }),
+      });
 
-      // Clear the transactions after successful sync
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Sync failed: ${response.status}`);
+      }
+
       await clearTransactions();
       console.log("Offline transactions synced and cleared");
     } catch (err) {

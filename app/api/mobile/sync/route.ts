@@ -15,6 +15,11 @@ function authenticate(request: Request) {
 }
 
 export async function GET(request: Request) {
+  const payload = authenticate(request);
+  if (!payload) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   await connectToMongo();
 
   const url = new URL(request.url);

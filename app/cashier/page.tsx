@@ -182,11 +182,52 @@ export default function CashierPage() {
     }
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // ignore
+    }
     setUser(null);
     setToken("");
     localStorage.removeItem("gridflow-token");
     localStorage.removeItem("gridflow-user");
+  }
+
+  async function handleCheckout() {
+    if (cart.length === 0) {
+      setStatus("Cart is empty.");
+      return;
+    }
+
+    setIsLoading(true);
+    setStatus("Processing checkout...");
+
+    try {
+      const items = cart.map((item) => ({ sku: item.sku, quantity: item.quantity }));
+      const response = await fetch("/api/cashier/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ items }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        setStatus(result.error || "Checkout failed.");
+        return;
+      }
+
+      setCart([]);
+      setStatus(`Checkout complete. Total: $${result.totalAmount.toFixed(2)}. Shift expected cash: $${result.expectedCash.toFixed(2)}`);
+    } catch (err) {
+      console.error(err);
+      setStatus("Checkout failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -346,13 +387,23 @@ export default function CashierPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400">Expected cash from scanned items</p>
             <p className="text-3xl font-semibold">${expectedCash.toFixed(2)}</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setCart([])}
-            className="rounded-2xl bg-slate-900 px-5 py-3 text-white hover:bg-slate-800"
-          >
-            Clear cart
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={handleCheckout}
+              disabled={cart.length === 0 || isLoading}
+              className="rounded-2xl bg-emerald-600 px-5 py-3 text-white hover:bg-emerald-700 disabled:bg-gray-400"
+            >
+              {isLoading ? "Processing..." : "Checkout"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCart([])}
+              className="rounded-2xl bg-slate-900 px-5 py-3 text-white hover:bg-slate-800"
+            >
+              Clear cart
+            </button>
+          </div>
         </div>
       </div>
     </div>
